@@ -55,3 +55,13 @@ Pattern Tables - They are either stored on the CHR-ROM or CHR-RAM of the cart. E
 Attribute Tables - These tables set the color info in 2x2 sections, meaning a 16x16 section can only hold 4 different colors from the palette.
 
 Palettes - These two areas hold color information, one from the background and one from the sprites. The palette has 16 colors.
+
+
+
+![image](cpumemmap.png)
+
+![image](ppumemmap.png)
+
+![image](pputile.png)
+
+![image](nesarchitecture.png)
