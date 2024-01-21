@@ -1,4 +1,4 @@
-# NES Homebrew Tutorial Notes
+# NES Homebrew Tutorial Notes from Nerdy Nights
 
 Decimal - Base 10, with a number system as 100, 10, 1. Basically if you remove a zero a number is 10 times smaller.
 
@@ -65,3 +65,113 @@ Palettes - These two areas hold color information, one from the background and o
 ![image](pputile.png)
 
 ![image](nesarchitecture.png)
+
+
+
+Bit - The smallest unit in computers. Either 0 or 1.
+
+Byte - 8 bits form a byte, a number from 0 to 255.
+
+Instruction - A command a processor executes.
+
+
+
+Directives - Commands sent to assembler.
+
+Labels - Makes code easier to organize, and the assembler translates a label into an address.
+
+Opcodes - Commands sent to processor.
+
+Operands - A part of an instruction that specifies the data to be manipulated.
+
+Comments - Helps readers understand the code.
+
+
+
+Game Cart Diagram
+
+$0000-0800 - Internal RAM, 2KB chip in the NES
+
+$2000-2007 - PPU access ports
+
+$4000-4017 - Audio and controller access ports
+
+$6000-7FFF - Optional WRAM inside the game cart
+
+$8000-FFFF - Game cart ROM
+
+
+
+Note - #$05 means the value 5, but $0005 means the address $0005. There are 56 different types of instructions and they start with a three-character code called an opcode.
+
+Register - Place inside a processor that holds a value.
+
+Accumulator - Main register for loading, storing, comparing, and doing math on data.
+
+Index Register X - Used for counting or memory access. Used to keep track of how many times a loop has run.
+
+Index Register Y - Almost the same as Index Register X.
+
+Status Register - Holds flags with info about the last instruction. It can check if a result is a zero.
+
+
+
+Common Instructions
+
+LDA - Load a value into the accumulator.
+
+LDX - Load a value into Index Register X.
+
+LDY - Load a value into Index Register Y.
+
+STA - Store a value from the accumulator.
+
+STX - Store a value from Index Register X.
+
+STY - Store a value from Index Register Y.
+
+TAX - Transfer the value from the accumulator into Index Register X.
+
+TAY - Transfer the value from the accumulator into Index Register Y.
+
+TXA - Transfer the value from Index Register X into the accumulator.
+
+TYA - Transfer the value from Index Register Y into the accumulator.
+
+ADC - Add with carry.
+
+SBC - Subtract with carry.
+
+CLC - Clear carry flag, should be used before ADC.
+
+SEC - Set carry flag, should be used before SBC.
+
+INC - Increment a value.
+
+DEC - Decrement a value.
+
+INY - Increment Y.
+
+INX - Increment X.
+
+DEY - Decrement Y.
+
+DEX - Decrement X.
+
+ASL - Shift all bits in either the accumulator or an address one position to the left. Multiply by 2.
+
+LSR - Shift all bits in either the accumulator or an address one position to the right. Divide by 2.
+
+CMP - Compare a variable or label to a specified value.
+
+CPX - Compare X to a specified value.
+
+CPY - Compare Y to a specified value.
+
+JMP - Jump to a specified address.
+
+BEQ - Branch if equal, if zero is set (values were equal) the code jumps to $FF00 and runs there. If zero is clear (values were not equal), there is no jump and the processor runs the next instruction.
+
+BNE - Branch if not equal, if zero is set (value were not equal) the code jumps to $FF00 and runs there. If zero is clear (values were equal), there is no jump and the processor runs the next instruction.
+
+Note - If a result is zero, the zero flag is set.
