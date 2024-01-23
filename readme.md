@@ -76,6 +76,8 @@ Instruction - A command a processor executes.
 
 
 
+Assembly basics
+
 Directives - Commands sent to assembler.
 
 Labels - Makes code easier to organize, and the assembler translates a label into an address.
@@ -88,7 +90,7 @@ Comments - Helps readers understand the code.
 
 
 
-Game Cart Diagram
+NES Diagram
 
 $0000-0800 - Internal RAM, 2KB chip in the NES
 
@@ -175,3 +177,99 @@ BEQ - Branch if equal, if zero is set (values were equal) the code jumps to $FF0
 BNE - Branch if not equal, if zero is set (value were not equal) the code jumps to $FF00 and runs there. If zero is clear (values were equal), there is no jump and the processor runs the next instruction.
 
 Note - If a result is zero, the zero flag is set.
+
+
+
+NES Code Structure
+
+iNES Header - Gives the emulator the info about the game such as mapper, grahpics mirroring, and PRG/CHR sizes. Mappers are used to increase the space in the game, and mirroring happens when the same memory appears at more than one range of addresses. Each bank of PRG is 16KB and each bank of CHR is 8KB. For PRG, write .inesprg x, for chr, write .ineschr x, for mapper, write .inesmap x, and for mirroring, write .inesmir x. X is the number value that is entered in the code.
+
+Banking - Nesasm arranges everything in 8KB code and 8KB graphics banks. Write the code like this: for every $2000 addresses, write .bank x, with x increasing by 1 for every $2000 addresses and starting at 0.
+
+Adding Binary Files - Use the .incbin directive to include a binary file. The most common binary file is a chr-rom file.
+
+Vectors - Three vectors interrupt code and jump to new locations. They are held in PRG-ROM and they tell the processor where to go when that happens. All of these vectors must always appear in the assembly file in the right order.
+
+NMI Vector - This happens once per frame when enabled. The PPU tells the processor it is starting the VBlank time and can update graphics.
+
+RESET Vector - This happens either when the NES starts up or when the reset button is hit.
+
+IRQ Vector - This is triggered from some mapper chips or audio interrupts.
+
+Data Word - A data word (.dw) is 2 bytes long.
+
+
+
+Correct Code for Vectors
+
+.bank x ;x being the numbered 8KB bank
+
+.org $FFFA ;where code jumps to when BNE or BEQ is called
+
+.dw NMI ;when an NMI happens, if enabled, the processor will jump to the label NMI:
+
+.dw RESET ;when the processor turns on or reset is pressed, it will jump to the label RESET:
+
+.dw IRQ ;when triggered, jump to the label IRQ:
+
+
+
+Reset Code - Because the reset vector was set to the label RESET, when the processor starts up, it will start from RESET. The .org directive sets the code into a space in the game ROM. There is no such thing as a decimal mode in the 6502 processor for the NES. This does not include code that runs on a real console, only on a FCEUX emulator.
+
+
+
+Reset Code Diagram
+
+.bank x ;x being the numbered 8KB bank
+
+.org $X000 ;for every $2000 addresses, x increases by 1
+
+RESET: ;the actual reset label
+
+SEI ;disable IRQs
+
+CLD ;disable decimal mode
+
+
+
+First program - An entire screen of one color. The color is displayed to address $2001, or the constant PPUMASK.
+
+
+
+Remaining Code
+
+LDA %76543210 ;the color displayed
+
+STA $2001 ;the address to display the color
+
+Forever: ;the label that makes everything go forever
+
+JMP Forever ;infinite loop
+
+
+
+Color Diagram
+
+76543210
+
+||||||||
+
+|||||||+- Grayscale (0: normal color; 1: AND all palette entries
+
+|||||||   with 0x30, effectively producing a monochrome display;
+
+|||||||   note that colour emphasis STILL works when this is on!)
+
+||||||+-- Disable background clipping in leftmost 8 pixels of screen
+
+|||||+--- Disable sprite clipping in leftmost 8 pixels of screen
+
+||||+---- Enable background rendering
+
+|||+----- Enable sprite rendering
+
+||+------ Intensify reds (and darken other colors)
+
+|+------- Intensify greens (and darken other colors)
+
++-------- Intensify blues (and darken other colors)
