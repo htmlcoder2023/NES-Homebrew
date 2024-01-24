@@ -273,3 +273,210 @@ Color Diagram
 |+------- Intensify greens (and darken other colors)
 
 +-------- Intensify blues (and darken other colors)
+
+
+
+Palette - Needed to put graphics on screen. There are two separate palettes that are 16 bytes each, with one used for background and one for sprites. $0D is a bad color because it results in a "blacker than black" palette. The palettes start at PPU address $3F00 and $3F10, and to set this address, PPU address port $2006 is used. The port needs to be written twice, one for the high byte and one for the low byte.
+
+
+
+![image](4924FAF3-9FC9-CED2-8403873F9EA75342.png)
+
+
+
+Code Diagram
+
+LDA $2002 ;read PPU status to reset the high/low latch to high
+
+LDA #$3F ;first color
+
+STA $2006 ;write the high byte of $3F10 address
+
+LDA #$10 ;second color 
+
+STA $2006 ;write the low byte of $3F10 address
+
+
+
+Code Explanation - It tells the PPU to set the address to $3F10, and now the PPU port at $2007 is ready to accept data. After each read or write, the PPU will automatically increment the address.
+
+
+
+Code Diagram
+
+LDA #$32 ;light blueish color
+
+STA $2007 ;write to PPU $3F10
+
+LDA #$14 ;pinkish color
+
+STA $2007 ;write to PPU $3F11
+
+LDA #$2A ;greenish color
+
+STA $2007 ;write to PPU $3F12
+
+LDA #$16 ;reddish color
+
+STA $2007 ;write to PPU $3F13
+
+
+
+Code Explanation - These writes would fill out the rest of the palette. However, there is a smaller way to write that code.
+
+
+
+Smaller way to write that code
+
+PaletteData:
+
+.db $0F,$31,$32,$33,$0F,$35,$36,$37,$0F,$39,$3A,$3B,$0F,$3D,$3E,$0F ;background palette data
+
+.db $0F,$1C,$15,$14,$0F,$02,$38,$3C,$0F,$1C,$15,$14,$0F,$02,$38,$3C ;sprite palette data
+
+
+
+Loop - Needed to copy those bytes to the palette in the PPU. The X register counts how many times the loop has repeated, and because both palettes is 32 bytes, the loop starts at 0 and counts to 32.
+
+
+
+Loop Code
+
+LDX #$00                ; start out at 0
+
+LoadPalettesLoop:
+
+LDA PaletteData, x      ; load data from address (PaletteData + the value in x)
+
+                        ; 1st time through loop it will load PaletteData+0
+
+                        ; 2nd time through loop it will load PaletteData+1
+
+                        ; 3rd time through loop it will load PaletteData+2
+
+                        ; etc
+
+STA $2007               ; write to PPU
+
+INX                     ; X = X + 1
+
+CPX #$20                ; Compare X to hex $20, decimal 32
+
+BNE LoadPalettesLoop    ; Branch to LoadPalettesLoop if compare was Not Equal to zero
+
+                        ; if compare was equal to 32, keep going down
+
+
+
+Code Explanation - When the code finishes, the color palette is ready.
+
+
+
+Sprites - Anything that moves seperately from the background will be made of sprites. A sprite is made up of 8x8 pixel tiles that the PPU renders anywhere on the screen. Objects are made from multiple sprites that are next to each other. For example, Mario and Bowser are made of multiple sprites. The PPU only has enough internal memory for 64 sprites, and it cannot be expanded, even with mappers.
+
+Sprite DMA - The fastest way to transfer sprites to sprite memory is to use DMA. That means a block of RAM is copied from CPU memory to the PPU sprite memory. The RAM space from $0200-$02FF is used for this purpose. To start the transfer, two bytes need to be written to the PPU ports.
+
+Sprite Data - Each sprite needs 4 bytes of data for its position and tile information in this order: 1. Y Position, 2. Tile Number, 3. Attributes, and 4. X position.
+
+
+
+Code Diagram
+
+LDA #$00 ;low byte
+
+STA $2003
+
+LDA #$02 ;high byte
+
+STA $4014
+
+
+
+Code Explanation - Once the second write is done, the DMA transfer will start automatically, and all data from the 64 sprites will be copied. Like all graphics updates, this needs to be done at the beginning of the VBlank period, so it will go in the NMI section of the code.
+
+
+
+Sprite Data Diagram
+
+1. Y position - the vertical position of the sprite. $00 is the top of the screen, and anything above $EF is off the bottom of the screen.
+
+2. Tile number - this is the tile number (0 to 256) for the graphic to be taken from the pattern table.
+
+3. Attributes - this byte holds color and displaying info. More in the diagram below.
+
+4. X position - horizontal position of the sprite. $00 is the left side, and anything above $F9 is off screen.
+
+Note - These 4 bytes repeat 64 times (one set per sprite) to fill 256 bytes of sprite memory. To edit sprite 0, change bytes $0200-0203, to edit sprite 1, change bytes $0204-0207, and etc.
+
+
+
+Sprite Attribute Table
+
+76543210
+
+|||   ||
+
+|||   ++- Color Palette of sprite.  Choose which set of 4 from the 16 colors to use
+
+|||
+
+||+------ Priority (0: in front of background; 1: behind background)
+
+|+------- Flip sprite horizontally
+
++-------- Flip sprite vertically
+
+
+
+Turning NMI/Sprites On - The PPU port $2001 is used again to enable sprites. Setting bit 4 to 1 will make them appear. NMI also needs to be turned on, so the Sprite DMA will run and the sprites will be copied every frame, which is done with the PPU port $2000. Pattern Table 0 is selected to choose sprites from, while Pattern Table 1 is used for background.
+
+
+
+Diagrams
+
+PPUCTRL ($2000)
+
+76543210
+
+| ||||||
+
+| ||||++- Base nametable address
+
+| ||||    (0 = $2000; 1 = $2400; 2 = $2800; 3 = $2C00)
+
+| |||+--- VRAM address increment per CPU read/write of PPUDATA
+
+| |||     (0: increment by 1, going across; 1: increment by 32, going down)
+
+| ||+---- Sprite pattern table address for 8x8 sprites (0: $0000; 1: $1000)
+
+| |+----- Background pattern table address (0: $0000; 1: $1000)
+
+| +------ Sprite size (0: 8x8; 1: 8x16)
+
+|
+
++-------- Generate an NMI at the start of the
+            vertical blanking interval vblank (0: off; 1: on)
+
+LDA #$80
+  
+STA $0200        ;put sprite 0 in center ($80) of screen vertically
+  
+STA $0203        ;put sprite 0 in center ($80) of screen horizontally
+  
+LDA #$00
+  
+STA $0201        ;tile number = 0
+  
+STA $0202        ;color palette = 0, no flipping
+
+LDA #%10000000   ; enable NMI, sprites from Pattern Table 0
+  
+STA $2000
+
+LDA #%00010000   ; no intensify (black background), enable sprites
+  
+STA $2001
+
+;Week 5 Coming Up!
